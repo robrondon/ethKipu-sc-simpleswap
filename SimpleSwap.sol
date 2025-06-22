@@ -90,7 +90,19 @@ contract SimpleSwap {
         uint256 reserveIn,
         uint256 reserveOut
     ) external pure returns (uint256 amountOut) {
-        // Calculate and return token amount to receive
+        amountOut = _getAmountOut(amountIn, reserveIn, reserveOut);
+        return amountOut;
+    }
+
+    function _getAmountOut(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal pure returns (uint256 amountOut) {
+        require(amountIn > 0, "Amount in must be greater than zero");
+        require(reserveIn > 0 && reserveOut > 0, "Insufficient reserves");
+
+        return (amountIn * reserveOut) / (reserveIn + amountIn);
     }
 }
 
