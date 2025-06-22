@@ -87,7 +87,7 @@ contract SimpleSwap {
 
         require(
             reserve.reserveA > 0 && reserve.reserveB > 0,
-            "There is no liquidity"
+            "SimpleSwap: No liquidity for this pair"
         );
 
         // Calculate and return price
@@ -113,7 +113,10 @@ contract SimpleSwap {
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
         require(amountIn > 0, "Amount in must be greater than zero");
-        require(reserveIn > 0 && reserveOut > 0, "Insufficient reserves");
+        require(
+            reserveIn > 0 && reserveOut > 0,
+            "SimpleSwap: No liquidity for this pair"
+        );
 
         return (amountIn * reserveOut) / (reserveIn + amountIn);
     }
@@ -132,5 +135,3 @@ contract SimpleSwap {
             : (tokenB, tokenA);
     }
 }
-
-// Al deployar hay que agregar liquidez de ambos tokens
