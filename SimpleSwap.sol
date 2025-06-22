@@ -68,6 +68,18 @@ contract SimpleSwap {
             amountBMin <= amountBDesired,
             "SimpleSwap: Minumum B amount exceeds desired B amount"
         );
+        // Calculate optimal amounts
+        (
+            uint256 optimalAmountA,
+            uint256 optimalAmountB
+        ) = _calculateOptimalLiquidityAmounts(
+                tokenA,
+                tokenB,
+                amountADesired,
+                amountBDesired,
+                amountAMin,
+                amountBMin
+            );
         // Must transfer tokens to user
         // Calculate and asign liquidity by reserves
         // Mint liquidity tokens to user
@@ -179,9 +191,81 @@ contract SimpleSwap {
         (address token0, address token1) = _sortTokens(tokenA, tokenB);
 
         if (lpTokens[token0][token1] != address(0)) {
-            return lpToken[token0][token1];
+            return lpTokens[token0][token1];
         }
 
         return _createLPToken(token0, token1);
+    }
+
+    function _calculateOptimalLiquidityAmounts(
+        address tokenA,
+        address tokenB,
+        uint256 amountADesired,
+        uint256 amountBDesired,
+        uint256 amountAMin,
+        uint256 amountBMin
+    ) internal view returns (uint256 optimalAmountA, uint256 optimalAmountB) {
+        (address token0, address token1) = _sortTokens(tokenA, tokenB);
+        Reserve memory reserve = reserves[token0][token1];
+
+        // New Pool
+        if (reserve.reserveA == 0 && reserve.reserveB == 0) {
+            return (amountADesired, amountBDesired);
+        }
+
+        // Existing pool
+        // Need to define which reserve belongs to each token
+        uint256 reserveA = tokenA == token0
+            ? reserve.reserveA
+            : reserve.reserveB;
+        uint256 reserveB = tokenA == token0
+            ? reserve.reserveB
+            : reserve.reserveA;
+
+        // Calculate how much tokenB is needed to match tokenA
+        uint256 amountBOptimal = _calculateTokensEquivalent(
+            amountADesired,
+            reserve.reserveA,
+            reserve.reserveB
+        );
+
+        // If there is enough tokenB provided use all amountADesired
+        if (amountBOptimal <= amountBDesired) {
+            require(
+                amountBOptimal >= amountBMin,
+                "SimpleSwap: It doesn't fit the minimum required"
+            );
+            return (amountADesired, amountBOptimal);
+        } else {
+            // If not, must calculate how much tokenA is needed to match tokenB
+            uint256 amountAOptimal = _calculateTokensEquivalent(
+                amountBDesired,
+                reserve.reserveB,
+                reserve.reserveA
+            );
+            require(
+                amountAOptimal <= amountADesired,
+                "SimpleSwap: Calculated optimal amount A exceeds desired amount"
+            );
+            require(
+                amountAOptimal >= amountAMin,
+                "SimpleSwap: It doesn't fit the minimum required"
+            );
+            return (amountAOptimal, amountBDesired);
+        }
+    }
+
+    function _calculateTokensEquivalent(
+        uint256 amountA,
+        uint256 reserveA,
+        uint256 reserveB
+    ) internal pure returns (uint256 amountB) {
+        require(amountA > 0, "SimpleSwap: Amount in must be greater than zero");
+        require(
+            reserveA > 0 && reserveB > 0,
+            "SimpleSwap: No liquidity for this pair"
+        );
+
+        amountB = (amountA * reserveB) / reserveA;
     }
 }
