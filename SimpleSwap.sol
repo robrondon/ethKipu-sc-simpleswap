@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {LPToken} from "./LPToken.sol";
+
 /**
  * @title SimpleSwap Smart Contract
  * @author Robert Rondón
@@ -133,5 +135,18 @@ contract SimpleSwap {
         (token0, token1) = tokenA < tokenB
             ? (tokenA, tokenB)
             : (tokenB, tokenA);
+    }
+
+    function _createLPToken(
+        address tokenA,
+        address tokenB
+    ) internal returns (address) {
+        string memory name = "SimpleSwap LP Token";
+        string memory symbol = "SLP";
+
+        LPToken lpToken = new LPToken(name, symbol, address(this));
+        lpTokens[tokenA][tokenB] = address(lpToken);
+
+        return address(lpToken);
     }
 }
