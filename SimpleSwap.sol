@@ -82,7 +82,20 @@ contract SimpleSwap {
         address tokenB
     ) external view returns (uint256 price) {
         // Obtain both tokens reserves
+        (address token0, address token1) = _sortTokens(tokenA, tokenB);
+        Reserve memory reserve = reserves[token0][token1];
+
+        require(
+            reserve.reserveA > 0 && reserve.reserveB > 0,
+            "There is no liquidity"
+        );
+
         // Calculate and return price
+        if (tokenA == token0) {
+            price = (reserve.reserveB * 1e18) / reserve.reserveA;
+        } else {
+            price = (reserve.reserveA * 1e18) / reserve.reserveB;
+        }
     }
 
     function getAmountOut(
@@ -103,6 +116,20 @@ contract SimpleSwap {
         require(reserveIn > 0 && reserveOut > 0, "Insufficient reserves");
 
         return (amountIn * reserveOut) / (reserveIn + amountIn);
+    }
+
+    function _sortTokens(
+        address tokenA,
+        address tokenB
+    ) internal pure returns (address token0, address token1) {
+        require(tokenA != tokenB, "Identical tokens");
+        require(
+            tokenA != address(0) && tokenB != address(0),
+            "Invalid token address"
+        );
+        (token0, token1) = tokenA < tokenB
+            ? (tokenA, tokenB)
+            : (tokenB, tokenA);
     }
 }
 
