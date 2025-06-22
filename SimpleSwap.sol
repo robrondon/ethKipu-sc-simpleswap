@@ -149,4 +149,17 @@ contract SimpleSwap {
 
         return address(lpToken);
     }
+
+    function _getOrCreateLPToken(
+        address tokenA,
+        address tokenB
+    ) internal returns (address) {
+        (address token0, address token1) = _sortTokens(tokenA, tokenB);
+
+        if (lpTokens[token0][token1] != address(0)) {
+            return lpToken[token0][token1];
+        }
+
+        return _createLPToken(token0, token1);
+    }
 }
