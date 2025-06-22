@@ -49,6 +49,25 @@ contract SimpleSwap {
         address to,
         uint256 deadline
     ) external returns (uint256 amountA, uint256 amountB, uint256 liquidity) {
+        // Basic validations
+        require(deadline >= block.timestamp, "SimpleSwap: Expired deadline");
+        require(to != address(0), "SimpleSwap: Invalid recipient address");
+        require(
+            amountADesired > 0,
+            "SimpleSwap: Desired A amount must be greater than zero"
+        );
+        require(
+            amountBDesired > 0,
+            "SimpleSwap: Desired B amount must be greater than zero"
+        );
+        require(
+            amountAMin <= amountADesired,
+            "SimpleSwap: Minumum A amount exceeds desired A amount"
+        );
+        require(
+            amountBMin <= amountBDesired,
+            "SimpleSwap: Minumum B amount exceeds desired B amount"
+        );
         // Must transfer tokens to user
         // Calculate and asign liquidity by reserves
         // Mint liquidity tokens to user
@@ -114,7 +133,10 @@ contract SimpleSwap {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal pure returns (uint256 amountOut) {
-        require(amountIn > 0, "Amount in must be greater than zero");
+        require(
+            amountIn > 0,
+            "SimpleSwap: Amount in must be greater than zero"
+        );
         require(
             reserveIn > 0 && reserveOut > 0,
             "SimpleSwap: No liquidity for this pair"
@@ -127,10 +149,10 @@ contract SimpleSwap {
         address tokenA,
         address tokenB
     ) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB, "Identical tokens");
+        require(tokenA != tokenB, "SimpleSwap: Identical tokens");
         require(
             tokenA != address(0) && tokenB != address(0),
-            "Invalid token address"
+            "SimpleSwap: Invalid token address"
         );
         (token0, token1) = tokenA < tokenB
             ? (tokenA, tokenB)
