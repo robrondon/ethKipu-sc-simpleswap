@@ -49,7 +49,13 @@ contract SimpleSwap {
         uint256 amountB,
         uint256 liquidity
     );
-    event SwappedTokens(address tokenA, address tokenB, uint256 amount);
+
+    event SwappedTokens(
+        address indexed tokenA,
+        address indexed tokenB,
+        address indexed to,
+        uint256[] amounts
+    );
 
     // ============================================================================
     // MAIN FUNCTIONS
@@ -201,9 +207,56 @@ contract SimpleSwap {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory amounts) {
-        // Transfer entry tokens from user to contract
+        require(deadline >= block.timestamp, "SimpleSwap: Expired deadline");
+        require(to != address(0), "SimpleSwap: Invalid recipient address");
+        require(
+            amountIn > 0,
+            "SimpleSwap: Amount in must be greater than zero"
+        );
+
+        (address token0, address token1) = _sortTokens(path[0], path[1]);
+
+        address lpTokenAddress = lpTokens[token0][token1];
+        require(
+            lpTokenAddress != address(0),
+            "SimpleSwap: Pool does not exist"
+        );
+
+        Reserve memory reserve = reserves[token0][token1];
+
+        uint256 reserveA = path[0] == token0
+            ? reserve.reserveA
+            : reserve.reserveB;
+        uint256 reserveB = path[0] == token0
+            ? reserve.reserveB
+            : reserve.reserveA;
+
         // Calculate exchange from reservations
+        uint256 amountOut = _getAmountOut(amountIn, reserveA, reserveB);
+
+        require(
+            amountOut >= amountOutMin,
+            "SimpleSwap: The available amountOut is not enough"
+        );
+
+        // Transfer entry tokens from user to contract
+        IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
         // Transfer out tokens from contract to user
+        IERC20(path[1]).transfer(to, amountOut);
+
+        if (path[0] == token0) {
+            reserves[token0][token1].reserveA += amountIn;
+            reserves[token0][token1].reserveB -= amountOut;
+        } else {
+            reserves[token0][token1].reserveA -= amountOut;
+            reserves[token0][token1].reserveB += amountIn;
+        }
+
+        amounts = new uint256[](2);
+        amounts[0] = amountIn;
+        amounts[1] = amountOut;
+
+        emit SwappedTokens(path[0], path[1], to, amounts);
     }
 
     function getPrice(
