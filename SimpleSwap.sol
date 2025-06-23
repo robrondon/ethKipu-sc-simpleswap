@@ -41,7 +41,14 @@ contract SimpleSwap {
         uint256 amountB,
         uint256 liquidity
     );
-    event RemovedLiquidity(address token, uint256 amount);
+    event LiquidityRemoved(
+        address indexed tokenA,
+        address indexed tokenB,
+        address indexed to,
+        uint256 amountA,
+        uint256 amountB,
+        uint256 liquidity
+    );
     event SwappedTokens(address tokenA, address tokenB, uint256 amount);
 
     // ============================================================================
@@ -138,8 +145,53 @@ contract SimpleSwap {
         address to,
         uint256 deadline
     ) external returns (uint256 amountA, uint256 amountB) {
+        require(deadline >= block.timestamp, "SimpleSwap: Expired deadline");
+        require(to != address(0), "SimpleSwap: Invalid recipient address");
+        require(
+            liquidity > 0,
+            "SimpleSwap: Liquidity must be greater than zero"
+        );
+
+        (address token0, address token1) = _sortTokens(tokenA, tokenB);
+
+        address lpTokenAddress = lpTokens[token0][token1];
+        require(
+            lpTokenAddress != address(0),
+            "SimpleSwap: Pool does not exist"
+        );
+
+        Reserve memory reserve = reserves[token0][token1];
+        require(
+            reserve.totalLiquidity >= liquidity,
+            "SimpleSwap: There is not enough liquidity"
+        );
+
+        // Calculate token values to return
+        uint256 amount0 = (liquidity * reserve.reserveA) /
+            reserve.totalLiquidity;
+        uint256 amount1 = (liquidity * reserve.reserveB) /
+            reserve.totalLiquidity;
+
+        amountA = tokenA == token0 ? amount0 : amount1;
+        amountB = tokenA == token0 ? amount1 : amount0;
+
+        require(amountA >= amountAMin, "SimpleSwap: Insufficient amount A");
+        require(amountB >= amountBMin, "SimpleSwap: Insufficient amount B");
+
         // Must burn liquidity tokens
-        // Calculate and return tokens A & B
+        LPToken lpToken = LPToken(lpTokenAddress);
+        lpToken.burn(msg.sender, liquidity);
+
+        // Transfer tokens
+        IERC20(tokenA).transfer(to, amountA);
+        IERC20(tokenB).transfer(to, amountB);
+
+        // Update Reserves
+        reserves[token0][token1].reserveA -= amount0;
+        reserves[token0][token1].reserveB -= amount1;
+        reserves[token0][token1].totalLiquidity -= liquidity;
+
+        emit LiquidityRemoved(tokenA, tokenB, to, amountA, amountB, liquidity);
     }
 
     function swapExactTokensForTokens(
