@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {LPToken} from "./LPToken.sol";
 
 /**
@@ -32,7 +33,14 @@ contract SimpleSwap {
     // ============================================================================
     // EVENTS
     // ============================================================================
-    event AddedLiquidity(address token, uint256 amount);
+    event LiquidityAdded(
+        address indexed tokenA,
+        address indexed tokenB,
+        address indexed to,
+        uint256 amountA,
+        uint256 amountB,
+        uint256 liquidity
+    );
     event RemovedLiquidity(address token, uint256 amount);
     event SwappedTokens(address tokenA, address tokenB, uint256 amount);
 
@@ -68,6 +76,7 @@ contract SimpleSwap {
             amountBMin <= amountBDesired,
             "SimpleSwap: Minumum B amount exceeds desired B amount"
         );
+
         // Calculate optimal amounts
         (
             uint256 optimalAmountA,
@@ -80,9 +89,44 @@ contract SimpleSwap {
                 amountAMin,
                 amountBMin
             );
-        // Must transfer tokens to user
+
+        // Must transfer tokens from user
+        IERC20(tokenA).transferFrom(msg.sender, address(this), optimalAmountA);
+        IERC20(tokenB).transferFrom(msg.sender, address(this), optimalAmountB);
+
         // Calculate and asign liquidity by reserves
+        amountA = optimalAmountA;
+        amountB = optimalAmountB;
+
+        (address token0, address token1) = _sortTokens(tokenA, tokenB);
+        Reserve memory reserve = reserves[token0][token1];
+
+        uint256 amount0 = tokenA == token0 ? amountA : amountB;
+        uint256 amount1 = tokenA == token0 ? amountB : amountA;
+
+        if (reserve.totalLiquidity == 0) {
+            // Simple calculation instead of using uniswap sqrt
+            liquidity = (amount0 * amount1) / 1e18;
+        } else {
+            uint256 liquidity0 = (amount0 * reserve.totalLiquidity) /
+                reserve.reserveA;
+            uint256 liquidity1 = (amount1 * reserve.totalLiquidity) /
+                reserve.reserveB;
+            liquidity = liquidity0 < liquidity1 ? liquidity0 : liquidity1;
+        }
+
         // Mint liquidity tokens to user
+        address lpTokenAddress = _getOrCreateLPToken(tokenA, tokenB);
+        LPToken lpToken = LPToken(lpTokenAddress);
+
+        lpToken.mint(to, liquidity);
+
+        // Update Reserves
+        reserves[token0][token1].reserveA += amount0;
+        reserves[token0][token1].reserveB += amount1;
+        reserves[token0][token1].totalLiquidity += liquidity;
+
+        emit LiquidityAdded(tokenA, tokenB, to, amountA, amountB, liquidity);
     }
 
     function removeLiquidity(
