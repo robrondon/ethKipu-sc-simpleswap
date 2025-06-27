@@ -107,15 +107,12 @@ contract SimpleSwap {
 
         // Must transfer tokens from user
         _transferTokensForLiquidity(params, result);
+
+        // Mint liquidity tokens to user
+        _mintLiquidityTokens(to, result);
         // Calculate and asign liquidity by reserves
         // amountA = result.amountA;
         // amountB = result.amountB;
-
-        // Mint liquidity tokens to user
-        address lpTokenAddress = _getOrCreateLPToken(tokenA, tokenB);
-        LPToken lpToken = LPToken(lpTokenAddress);
-
-        lpToken.mint(to, result.liquidity);
 
         // TODO: Update Reserves
         // reserves[token0][token1].reserveA += amount0;
@@ -146,6 +143,17 @@ contract SimpleSwap {
             address(this),
             result.amountB
         );
+    }
+
+    function _mintLiquidityTokens(
+        address to,
+        LiquidityResult memory result
+    ) internal {
+        address lpTokenAddress = _getOrCreateLPToken(
+            result.token0,
+            result.token1
+        );
+        LPToken(lpTokenAddress).mint(to, result.liquidity);
     }
 
     function _validateAddLiquidityParams(
