@@ -31,6 +31,16 @@ contract SimpleSwap {
         uint256 deadline;
     }
 
+    struct RemoveLiquidityParams {
+        address tokenA;
+        address tokenB;
+        uint256 liquidity;
+        uint256 amountAMin;
+        uint256 amountBMin;
+        address to;
+        uint256 deadline;
+    }
+
     struct LiquidityResult {
         uint256 amountA;
         uint256 amountB;
@@ -141,12 +151,18 @@ contract SimpleSwap {
         address to,
         uint256 deadline
     ) external returns (uint256 amountA, uint256 amountB) {
-        require(deadline >= block.timestamp, "SimpleSwap: Expired deadline");
-        require(to != address(0), "SimpleSwap: Invalid recipient address");
-        require(
-            liquidity > 0,
-            "SimpleSwap: Liquidity must be greater than zero"
-        );
+        RemoveLiquidityParams memory params = RemoveLiquidityParams({
+            tokenA: tokenA,
+            tokenB: tokenB,
+            liquidity: liquidity,
+            amountAMin: amountAMin,
+            amountBMin: amountBMin,
+            to: to,
+            deadline: deadline
+        });
+
+        // Validate params
+        _validateRemoveLiquidityParams(params);
 
         (address token0, address token1) = _sortTokens(tokenA, tokenB);
 
@@ -188,6 +204,23 @@ contract SimpleSwap {
         reserves[token0][token1].totalLiquidity -= liquidity;
 
         emit LiquidityRemoved(tokenA, tokenB, to, amountA, amountB, liquidity);
+    }
+
+    function _validateRemoveLiquidityParams(
+        RemoveLiquidityParams memory params
+    ) internal view {
+        require(
+            params.deadline >= block.timestamp,
+            "SimpleSwap: Expired deadline"
+        );
+        require(
+            params.to != address(0),
+            "SimpleSwap: Invalid recipient address"
+        );
+        require(
+            params.liquidity > 0,
+            "SimpleSwap: Liquidity must be greater than zero"
+        );
     }
 
     function swapExactTokensForTokens(
