@@ -208,23 +208,21 @@ contract SimpleSwap {
         // Validate Params
         _validateSwapParams(params);
 
-        (address token0, address token1) = _sortTokens(path[0], path[1]);
+        // Obtain pool info
+        (
+            address token0,
+            address token1,
+            address lpTokenAddress,
+            Reserve memory reserve
+        ) = _getPoolInfo(path[0], path[1]);
 
-        address lpTokenAddress = lpTokens[token0][token1];
-        require(
-            lpTokenAddress != address(0),
-            "SimpleSwap: Pool does not exist"
-        );
-
-        Reserve memory reserve = reserves[token0][token1];
-
+        // Update reserves after swap
         uint256 reserveA = path[0] == token0
             ? reserve.reserveA
             : reserve.reserveB;
         uint256 reserveB = path[0] == token0
             ? reserve.reserveB
             : reserve.reserveA;
-
         // Calculate exchange from reservations
         uint256 amountOut = _getAmountOut(amountIn, reserveA, reserveB);
 
@@ -251,6 +249,28 @@ contract SimpleSwap {
         amounts[1] = amountOut;
 
         emit SwappedTokens(path[0], path[1], to, amounts);
+    }
+
+    function _getPoolInfo(
+        address tokenA,
+        address tokenB
+    )
+        internal
+        view
+        returns (
+            address token0,
+            address token1,
+            address lpTokenAddress,
+            Reserve memory reserve
+        )
+    {
+        (address token0, address token1) = _sortTokens(tokenA, tokenB);
+        address lpTokenAddress = lpTokens[token0][token1];
+        require(
+            lpTokenAddress != address(0),
+            "SimpleSwap: Pool does not exist"
+        );
+        reserve = reserves[token0][token1];
     }
 
     function _validateSwapParams(SwapParams memory params) internal view {
