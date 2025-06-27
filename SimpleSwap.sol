@@ -177,17 +177,7 @@ contract SimpleSwap {
             "SimpleSwap: There is not enough liquidity"
         );
 
-        // Calculate token values to return
-        uint256 amount0 = (liquidity * reserve.reserveA) /
-            reserve.totalLiquidity;
-        uint256 amount1 = (liquidity * reserve.reserveB) /
-            reserve.totalLiquidity;
-
-        amountA = tokenA == token0 ? amount0 : amount1;
-        amountB = tokenA == token0 ? amount1 : amount0;
-
-        require(amountA >= amountAMin, "SimpleSwap: Insufficient amount A");
-        require(amountB >= amountBMin, "SimpleSwap: Insufficient amount B");
+        // Calculate removal amounts
 
         // Must burn liquidity tokens
         LPToken lpToken = LPToken(lpTokenAddress);
@@ -203,6 +193,23 @@ contract SimpleSwap {
         reserves[token0][token1].totalLiquidity -= liquidity;
 
         emit LiquidityRemoved(tokenA, tokenB, to, amountA, amountB, liquidity);
+    }
+
+    function _calculateRemovalAmounts(
+        RemoveLiquidityParams memory params,
+        Reserve memory reserve,
+        address token0
+    ) internal pure returns (uint256 amountA, uint256amountB) {
+        uint256 amount0 = (liquidity * reserve.reserveA) /
+            reserve.totalLiquidity;
+        uint256 amount1 = (liquidity * reserve.reserveB) /
+            reserve.totalLiquidity;
+
+        amountA = tokenA == token0 ? amount0 : amount1;
+        amountB = tokenA == token0 ? amount1 : amount0;
+
+        require(amountA >= amountAMin, "SimpleSwap: Insufficient amount A");
+        require(amountB >= amountBMin, "SimpleSwap: Insufficient amount B");
     }
 
     function _validateRemoveLiquidityParams(
