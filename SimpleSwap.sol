@@ -230,19 +230,30 @@ contract SimpleSwap {
             "SimpleSwap: The available amountOut is not enough"
         );
 
-        // Transfer entry tokens from user to contract
-        IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);
-        // Transfer out tokens from contract to user
-        IERC20(path[1]).transfer(to, amountOut);
+        // Execute swap trasfers
+        _swapTransfers(params, amountOut);
 
         // Update reserves
         _updateReservesAfterSwap(params, amountOut, token0, token1);
 
+        // Prepare amounts array
         amounts = new uint256[](2);
         amounts[0] = amountIn;
         amounts[1] = amountOut;
 
         emit SwappedTokens(path[0], path[1], to, amounts);
+    }
+
+    function _swapTransfers(
+        SwapParams memory params,
+        uint256 amountOut
+    ) internal {
+        IERC20(params.path[0]).transferFrom(
+            msg.sender,
+            address(this),
+            params.amountIn
+        );
+        IERC20(params.path[1]).transfer(params.to, amountOut);
     }
 
     function _updateReservesAfterSwap(
