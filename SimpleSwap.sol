@@ -244,79 +244,6 @@ contract SimpleSwap {
         emit SwappedTokens(path[0], path[1], to, amounts);
     }
 
-    function _swapTransfers(
-        SwapParams memory params,
-        uint256 amountOut
-    ) internal {
-        IERC20(params.path[0]).transferFrom(
-            msg.sender,
-            address(this),
-            params.amountIn
-        );
-        IERC20(params.path[1]).transfer(params.to, amountOut);
-    }
-
-    function _updateReservesAfterSwap(
-        SwapParams memory params,
-        uint256 amountOut,
-        address token0,
-        address token1
-    ) internal {
-        if (params.path[0] == token0) {
-            reserves[token0][token1].reserveA += params.amountIn;
-            reserves[token0][token1].reserveB -= amountOut;
-        } else {
-            reserves[token0][token1].reserveA -= amountOut;
-            reserves[token0][token1].reserveB += params.amountIn;
-        }
-    }
-
-    function _getSwapReserves(
-        address tokenIn,
-        address token0,
-        Reserve memory reserve
-    ) internal pure returns (uint256 reserveIn, uint256 reserveOut) {
-        reserveIn = tokenIn == token0 ? reserve.reserveA : reserve.reserveB;
-        reserveOut = tokenIn == token0 ? reserve.reserveB : reserve.reserveA;
-    }
-
-    function _getPoolInfo(
-        address tokenA,
-        address tokenB
-    )
-        internal
-        view
-        returns (
-            address token0,
-            address token1,
-            address lpTokenAddress,
-            Reserve memory reserve
-        )
-    {
-        (address token0, address token1) = _sortTokens(tokenA, tokenB);
-        address lpTokenAddress = lpTokens[token0][token1];
-        require(
-            lpTokenAddress != address(0),
-            "SimpleSwap: Pool does not exist"
-        );
-        reserve = reserves[token0][token1];
-    }
-
-    function _validateSwapParams(SwapParams memory params) internal view {
-        require(
-            params.deadline >= block.timestamp,
-            "SimpleSwap: Expired deadline"
-        );
-        require(
-            params.to != address(0),
-            "SimpleSwap: Invalid recipient address"
-        );
-        require(
-            params.amountIn > 0,
-            "SimpleSwap: Amount in must be greater than zero"
-        );
-    }
-
     function getPrice(
         address tokenA,
         address tokenB
@@ -586,5 +513,78 @@ contract SimpleSwap {
                 ? liquidity0
                 : liquidity1;
         }
+    }
+
+    function _swapTransfers(
+        SwapParams memory params,
+        uint256 amountOut
+    ) internal {
+        IERC20(params.path[0]).transferFrom(
+            msg.sender,
+            address(this),
+            params.amountIn
+        );
+        IERC20(params.path[1]).transfer(params.to, amountOut);
+    }
+
+    function _updateReservesAfterSwap(
+        SwapParams memory params,
+        uint256 amountOut,
+        address token0,
+        address token1
+    ) internal {
+        if (params.path[0] == token0) {
+            reserves[token0][token1].reserveA += params.amountIn;
+            reserves[token0][token1].reserveB -= amountOut;
+        } else {
+            reserves[token0][token1].reserveA -= amountOut;
+            reserves[token0][token1].reserveB += params.amountIn;
+        }
+    }
+
+    function _getSwapReserves(
+        address tokenIn,
+        address token0,
+        Reserve memory reserve
+    ) internal pure returns (uint256 reserveIn, uint256 reserveOut) {
+        reserveIn = tokenIn == token0 ? reserve.reserveA : reserve.reserveB;
+        reserveOut = tokenIn == token0 ? reserve.reserveB : reserve.reserveA;
+    }
+
+    function _getPoolInfo(
+        address tokenA,
+        address tokenB
+    )
+        internal
+        view
+        returns (
+            address token0,
+            address token1,
+            address lpTokenAddress,
+            Reserve memory reserve
+        )
+    {
+        (address token0, address token1) = _sortTokens(tokenA, tokenB);
+        address lpTokenAddress = lpTokens[token0][token1];
+        require(
+            lpTokenAddress != address(0),
+            "SimpleSwap: Pool does not exist"
+        );
+        reserve = reserves[token0][token1];
+    }
+
+    function _validateSwapParams(SwapParams memory params) internal view {
+        require(
+            params.deadline >= block.timestamp,
+            "SimpleSwap: Expired deadline"
+        );
+        require(
+            params.to != address(0),
+            "SimpleSwap: Invalid recipient address"
+        );
+        require(
+            params.amountIn > 0,
+            "SimpleSwap: Amount in must be greater than zero"
+        );
     }
 }
