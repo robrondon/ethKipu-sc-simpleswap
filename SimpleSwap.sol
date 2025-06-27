@@ -124,118 +124,6 @@ contract SimpleSwap {
         );
     }
 
-    function _updateReservesAfterAdd(LiquidityResult memory result) internal {
-        uint256 amount0 = result.amountA;
-        uint256 amount1 = result.amountB;
-
-        if (result.token0 != address(0)) {
-            reserves[result.token0][result.token1].reserveA += amount0;
-            reserves[result.token0][result.token1].reserveB += amount1;
-            reserves[result.token0][result.token1].totalLiquidity += result
-                .liquidity;
-        }
-    }
-
-    function _transferTokensForLiquidity(
-        AddLiquidityParams memory params,
-        LiquidityResult memory result
-    ) internal {
-        IERC20(params.tokenA).transferFrom(
-            msg.sender,
-            address(this),
-            result.amountA
-        );
-        IERC20(params.tokenB).transferFrom(
-            msg.sender,
-            address(this),
-            result.amountB
-        );
-    }
-
-    function _mintLiquidityTokens(
-        address to,
-        LiquidityResult memory result
-    ) internal {
-        address lpTokenAddress = _getOrCreateLPToken(
-            result.token0,
-            result.token1
-        );
-        LPToken(lpTokenAddress).mint(to, result.liquidity);
-    }
-
-    function _validateAddLiquidityParams(
-        AddLiquidityParams memory params
-    ) internal view {
-        require(
-            params.deadline >= block.timestamp,
-            "SimpleSwap: Expired deadline"
-        );
-        require(
-            params.to != address(0),
-            "SimpleSwap: Invalid recipient address"
-        );
-        require(
-            params.amountADesired > 0,
-            "SimpleSwap: Desired A amount must be greater than zero"
-        );
-        require(
-            params.amountBDesired > 0,
-            "SimpleSwap: Desired B amount must be greater than zero"
-        );
-        require(
-            params.amountAMin <= params.amountADesired,
-            "SimpleSwap: Minumum A amount exceeds desired A amount"
-        );
-        require(
-            params.amountBMin <= params.amountBDesired,
-            "SimpleSwap: Minumum B amount exceeds desired B amount"
-        );
-    }
-
-    function _calculateAndPrepareLiquidity(
-        AddLiquidityParams memory params
-    ) internal view returns (LiquidityResult memory result) {
-        (result.token0, result.token1) = _sortTokens(
-            params.tokenA,
-            params.tokenB
-        );
-
-        (result.amountA, result.amountB) = _calculateOptimalLiquidityAmounts(
-            params.tokenA,
-            params.tokenB,
-            params.amountADesired,
-            params.amountBDesired,
-            params.amountAMin,
-            params.amountBMin
-        );
-
-        Reserve memory reserve = reserves[result.token0][result.token1];
-
-        uint256 amount0 = params.tokenA == result.token0
-            ? result.amountA
-            : result.amountB;
-        uint256 amount1 = params.tokenA == result.token0
-            ? result.amountB
-            : result.amountA;
-
-        if (reserve.totalLiquidity == 0) {
-            // Simple calculation instead of using uniswap sqrt
-            result.liquidity = (amount0 * amount1) / 1e18;
-        } else {
-            uint256 liquidity0 = (amount0 * reserve.totalLiquidity) /
-                reserve.reserveA;
-            uint256 liquidity1 = (amount1 * reserve.totalLiquidity) /
-                reserve.reserveB;
-            result.liquidity = liquidity0 < liquidity1
-                ? liquidity0
-                : liquidity1;
-        }
-    }
-
-    function _addLiquidity(
-        AddLiquidityParams memory params
-    ) internal returns (uint256, uint256, uint256) {}
-
     function removeLiquidity(
         address tokenA,
         address tokenB,
@@ -510,5 +398,113 @@ contract SimpleSwap {
         );
 
         amountB = (amountA * reserveB) / reserveA;
+    }
+
+    function _updateReservesAfterAdd(LiquidityResult memory result) internal {
+        uint256 amount0 = result.amountA;
+        uint256 amount1 = result.amountB;
+
+        if (result.token0 != address(0)) {
+            reserves[result.token0][result.token1].reserveA += amount0;
+            reserves[result.token0][result.token1].reserveB += amount1;
+            reserves[result.token0][result.token1].totalLiquidity += result
+                .liquidity;
+        }
+    }
+
+    function _transferTokensForLiquidity(
+        AddLiquidityParams memory params,
+        LiquidityResult memory result
+    ) internal {
+        IERC20(params.tokenA).transferFrom(
+            msg.sender,
+            address(this),
+            result.amountA
+        );
+        IERC20(params.tokenB).transferFrom(
+            msg.sender,
+            address(this),
+            result.amountB
+        );
+    }
+
+    function _mintLiquidityTokens(
+        address to,
+        LiquidityResult memory result
+    ) internal {
+        address lpTokenAddress = _getOrCreateLPToken(
+            result.token0,
+            result.token1
+        );
+        LPToken(lpTokenAddress).mint(to, result.liquidity);
+    }
+
+    function _validateAddLiquidityParams(
+        AddLiquidityParams memory params
+    ) internal view {
+        require(
+            params.deadline >= block.timestamp,
+            "SimpleSwap: Expired deadline"
+        );
+        require(
+            params.to != address(0),
+            "SimpleSwap: Invalid recipient address"
+        );
+        require(
+            params.amountADesired > 0,
+            "SimpleSwap: Desired A amount must be greater than zero"
+        );
+        require(
+            params.amountBDesired > 0,
+            "SimpleSwap: Desired B amount must be greater than zero"
+        );
+        require(
+            params.amountAMin <= params.amountADesired,
+            "SimpleSwap: Minumum A amount exceeds desired A amount"
+        );
+        require(
+            params.amountBMin <= params.amountBDesired,
+            "SimpleSwap: Minumum B amount exceeds desired B amount"
+        );
+    }
+
+    function _calculateAndPrepareLiquidity(
+        AddLiquidityParams memory params
+    ) internal view returns (LiquidityResult memory result) {
+        (result.token0, result.token1) = _sortTokens(
+            params.tokenA,
+            params.tokenB
+        );
+
+        (result.amountA, result.amountB) = _calculateOptimalLiquidityAmounts(
+            params.tokenA,
+            params.tokenB,
+            params.amountADesired,
+            params.amountBDesired,
+            params.amountAMin,
+            params.amountBMin
+        );
+
+        Reserve memory reserve = reserves[result.token0][result.token1];
+
+        uint256 amount0 = params.tokenA == result.token0
+            ? result.amountA
+            : result.amountB;
+        uint256 amount1 = params.tokenA == result.token0
+            ? result.amountB
+            : result.amountA;
+
+        if (reserve.totalLiquidity == 0) {
+            // Simple calculation instead of using uniswap sqrt
+            result.liquidity = (amount0 * amount1) / 1e18;
+        } else {
+            uint256 liquidity0 = (amount0 * reserve.totalLiquidity) /
+                reserve.reserveA;
+            uint256 liquidity1 = (amount1 * reserve.totalLiquidity) /
+                reserve.reserveB;
+            result.liquidity = liquidity0 < liquidity1
+                ? liquidity0
+                : liquidity1;
+        }
     }
 }
