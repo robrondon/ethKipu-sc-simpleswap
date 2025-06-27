@@ -20,6 +20,17 @@ contract SimpleSwap {
         uint256 totalLiquidity; // Total LP tokens minted for this pool
     }
 
+    struct AddLiquidityParams {
+        address tokenA;
+        address tokenB;
+        uint256 amountADesired;
+        uint256 amountBDesired;
+        uint256 amountAMin;
+        uint256 amountBMin;
+        address to;
+        uint256 deadline;
+    }
+
     // ============================================================================
     // STATE VARIABLES
     // ============================================================================
@@ -70,26 +81,19 @@ contract SimpleSwap {
         address to,
         uint256 deadline
     ) external returns (uint256 amountA, uint256 amountB, uint256 liquidity) {
-        // Basic validations
-        require(deadline >= block.timestamp, "SimpleSwap: Expired deadline");
-        require(to != address(0), "SimpleSwap: Invalid recipient address");
-        require(
-            amountADesired > 0,
-            "SimpleSwap: Desired A amount must be greater than zero"
-        );
-        require(
-            amountBDesired > 0,
-            "SimpleSwap: Desired B amount must be greater than zero"
-        );
-        require(
-            amountAMin <= amountADesired,
-            "SimpleSwap: Minumum A amount exceeds desired A amount"
-        );
-        require(
-            amountBMin <= amountBDesired,
-            "SimpleSwap: Minumum B amount exceeds desired B amount"
-        );
+        AddLiquidityParams memory params = AddLiquidityParams({
+            tokenA: tokenA,
+            tokenB: tokenB,
+            amountADesired: amountADesired,
+            amountBDesired: amountBDesired,
+            amountAMin: amountAMin,
+            amountBMin: amountBMin,
+            to: to,
+            deadline: deadline
+        });
 
+        // Basic validations
+        _validateAddLiquidityParams(params);
         // Calculate optimal amounts
         (
             uint256 optimalAmountA,
@@ -140,6 +144,35 @@ contract SimpleSwap {
         reserves[token0][token1].totalLiquidity += liquidity;
 
         emit LiquidityAdded(tokenA, tokenB, to, amountA, amountB, liquidity);
+    }
+
+    function _validateAddLiquidityParams(
+        AddLiquidityParams memory params
+    ) internal view {
+        require(
+            params.deadline >= block.timestamp,
+            "SimpleSwap: Expired deadline"
+        );
+        require(
+            params.to != address(0),
+            "SimpleSwap: Invalid recipient address"
+        );
+        require(
+            params.amountADesired > 0,
+            "SimpleSwap: Desired A amount must be greater than zero"
+        );
+        require(
+            params.amountBDesired > 0,
+            "SimpleSwap: Desired B amount must be greater than zero"
+        );
+        require(
+            params.amountAMin <= params.amountADesired,
+            "SimpleSwap: Minumum A amount exceeds desired A amount"
+        );
+        require(
+            params.amountBMin <= params.amountBDesired,
+            "SimpleSwap: Minumum B amount exceeds desired B amount"
+        );
     }
 
     function removeLiquidity(
