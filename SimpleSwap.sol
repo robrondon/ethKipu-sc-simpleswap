@@ -216,16 +216,15 @@ contract SimpleSwap {
             Reserve memory reserve
         ) = _getPoolInfo(path[0], path[1]);
 
-        // Update reserves after swap
-        uint256 reserveA = path[0] == token0
-            ? reserve.reserveA
-            : reserve.reserveB;
-        uint256 reserveB = path[0] == token0
-            ? reserve.reserveB
-            : reserve.reserveA;
-        // Calculate exchange from reservations
-        uint256 amountOut = _getAmountOut(amountIn, reserveA, reserveB);
+        // Get swap reserves
+        (uint256 reserveIn, uint256 reserveOut) = _getSwapReserves(
+            path[0],
+            token0,
+            reserve
+        );
 
+        // Calculate exchange from reservations
+        uint256 amountOut = _getAmountOut(amountIn, reserveIn, reserveOut);
         require(
             amountOut >= amountOutMin,
             "SimpleSwap: The available amountOut is not enough"
@@ -249,6 +248,15 @@ contract SimpleSwap {
         amounts[1] = amountOut;
 
         emit SwappedTokens(path[0], path[1], to, amounts);
+    }
+
+    function _getSwapReserves(
+        address tokenIn,
+        address token0,
+        Reserve memory reserve
+    ) internal pure returns (uint256 reserveIn, uint256 reserveOut) {
+        reserveIn = tokenIn == token0 ? reserve.reserveA : reserve.reserveB;
+        reserveOut = tokenIn == token0 ? reserve.reserveB : reserve.reserveA;
     }
 
     function _getPoolInfo(
