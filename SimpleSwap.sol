@@ -164,15 +164,14 @@ contract SimpleSwap {
         // Validate params
         _validateRemoveLiquidityParams(params);
 
-        (address token0, address token1) = _sortTokens(tokenA, tokenB);
+        // Get pool info
+        (
+            address token0,
+            address token1,
+            address lpTokenAddress,
+            Reserve memory reserve
+        ) = _getPoolInfo(tokenA, tokenB);
 
-        address lpTokenAddress = lpTokens[token0][token1];
-        require(
-            lpTokenAddress != address(0),
-            "SimpleSwap: Pool does not exist"
-        );
-
-        Reserve memory reserve = reserves[token0][token1];
         require(
             reserve.totalLiquidity >= liquidity,
             "SimpleSwap: There is not enough liquidity"
