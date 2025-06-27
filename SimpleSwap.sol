@@ -235,19 +235,29 @@ contract SimpleSwap {
         // Transfer out tokens from contract to user
         IERC20(path[1]).transfer(to, amountOut);
 
-        if (path[0] == token0) {
-            reserves[token0][token1].reserveA += amountIn;
-            reserves[token0][token1].reserveB -= amountOut;
-        } else {
-            reserves[token0][token1].reserveA -= amountOut;
-            reserves[token0][token1].reserveB += amountIn;
-        }
+        // Update reserves
+        _updateReservesAfterSwap(params, amountOut, token0, token1);
 
         amounts = new uint256[](2);
         amounts[0] = amountIn;
         amounts[1] = amountOut;
 
         emit SwappedTokens(path[0], path[1], to, amounts);
+    }
+
+    function _updateReservesAfterSwap(
+        SwapParams memory params,
+        uint256 amountOut,
+        address token0,
+        address token1
+    ) internal {
+        if (params.path[0] == token0) {
+            reserves[token0][token1].reserveA += params.amountIn;
+            reserves[token0][token1].reserveB -= amountOut;
+        } else {
+            reserves[token0][token1].reserveA -= amountOut;
+            reserves[token0][token1].reserveB += params.amountIn;
+        }
     }
 
     function _getSwapReserves(
