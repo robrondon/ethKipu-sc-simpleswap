@@ -106,17 +106,7 @@ contract SimpleSwap {
         LiquidityResult memory result = _calculateAndPrepareLiquidity(params);
 
         // Must transfer tokens from user
-        IERC20(result.token0).transferFrom(
-            msg.sender,
-            address(this),
-            result.amountA
-        );
-        IERC20(result.token1).transferFrom(
-            msg.sender,
-            address(this),
-            result.amountB
-        );
-
+        _transferTokensForLiquidity(params, result);
         // Calculate and asign liquidity by reserves
         // amountA = result.amountA;
         // amountB = result.amountB;
@@ -139,6 +129,22 @@ contract SimpleSwap {
             result.amountA,
             result.amountB,
             result.liquidity
+        );
+    }
+
+    function _transferTokensForLiquidity(
+        AddLiquidityParams memory params,
+        LiquidityResult memory result
+    ) internal {
+        IERC20(params.tokenA).transferFrom(
+            msg.sender,
+            address(this),
+            result.amountA
+        );
+        IERC20(params.tokenB).transferFrom(
+            msg.sender,
+            address(this),
+            result.amountB
         );
     }
 
