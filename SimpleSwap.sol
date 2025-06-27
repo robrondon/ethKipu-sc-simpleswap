@@ -39,6 +39,14 @@ contract SimpleSwap {
         address token1;
     }
 
+    struct SwapParams {
+        uint256 amountIn;
+        uint256 amountOutMin;
+        address[] path;
+        address to;
+        uint256 deadline;
+    }
+
     // ============================================================================
     // STATE VARIABLES
     // ============================================================================
@@ -189,12 +197,16 @@ contract SimpleSwap {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory amounts) {
-        require(deadline >= block.timestamp, "SimpleSwap: Expired deadline");
-        require(to != address(0), "SimpleSwap: Invalid recipient address");
-        require(
-            amountIn > 0,
-            "SimpleSwap: Amount in must be greater than zero"
-        );
+        SwapParams memory params = SwapParams({
+            amountIn: amountIn,
+            amountOutMin: amountOutMin,
+            path: path,
+            to: to,
+            deadline: deadline
+        });
+
+        // Validate Params
+        _validateSwapParams(params);
 
         (address token0, address token1) = _sortTokens(path[0], path[1]);
 
@@ -241,6 +253,21 @@ contract SimpleSwap {
         emit SwappedTokens(path[0], path[1], to, amounts);
     }
 
+    function _validateSwapParams(SwapParams memory params) internal view {
+        require(
+            params.deadline >= block.timestamp,
+            "SimpleSwap: Expired deadline"
+        );
+        require(
+            params.to != address(0),
+            "SimpleSwap: Invalid recipient address"
+        );
+        require(
+            params.amountIn > 0,
+            "SimpleSwap: Amount in must be greater than zero"
+        );
+    }
+
     function getPrice(
         address tokenA,
         address tokenB
@@ -270,6 +297,10 @@ contract SimpleSwap {
         amountOut = _getAmountOut(amountIn, reserveIn, reserveOut);
         return amountOut;
     }
+
+    // ============================================================================
+    // INTERNAL FUNCTIONS
+    // ============================================================================
 
     function _getAmountOut(
         uint256 amountIn,
