@@ -110,14 +110,9 @@ contract SimpleSwap {
 
         // Mint liquidity tokens to user
         _mintLiquidityTokens(to, result);
-        // Calculate and asign liquidity by reserves
-        // amountA = result.amountA;
-        // amountB = result.amountB;
 
-        // TODO: Update Reserves
-        // reserves[token0][token1].reserveA += amount0;
-        // reserves[token0][token1].reserveB += amount1;
-        // reserves[token0][token1].totalLiquidity += result.liquidity;
+        // Update Reserves
+        _updateReservesAfterAdd(result);
 
         emit LiquidityAdded(
             tokenA,
@@ -127,6 +122,18 @@ contract SimpleSwap {
             result.amountB,
             result.liquidity
         );
+    }
+
+    function _updateReservesAfterAdd(LiquidityResult memory result) internal {
+        uint256 amount0 = result.amountA;
+        uint256 amount1 = result.amountB;
+
+        if (result.token0 != address(0)) {
+            reserves[result.token0][result.token1].reserveA += amount0;
+            reserves[result.token0][result.token1].reserveB += amount1;
+            reserves[result.token0][result.token1].totalLiquidity += result
+                .liquidity;
+        }
     }
 
     function _transferTokensForLiquidity(
