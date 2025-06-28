@@ -414,11 +414,13 @@ contract SimpleSwap {
     }
 
     /**
-     * @notice Gets the current price of tokenA in terms of tokenB
-     * @param tokenA Address of the token to get price for
-     * @param tokenB Address of the token to price against
-     * @return price Price of tokenA in tokenB (scaled by 1e18)
-     * @dev Returns how many tokenB units equal 1 tokenA unit, multiplied by 1e18 for precision
+     * @notice Gets the exchange rate of tokenA quoted in tokenB
+     * @param tokenA Address of the base token (numerator)
+     * @param tokenB Address of the quote token (denominator)
+     * @return price How many units of tokenB are needed to buy 1 unit of tokenA (scaled by 1e18)
+     * @dev Formula: price = (reserveB * 1e18) / reserveA
+     * @dev Example: if price = 2e18, then 1 tokenA = 2 tokenB
+     * @dev Reverts if no liquidity exists for the token pair
      */
     function getPrice(
         address tokenA,
@@ -744,10 +746,12 @@ contract SimpleSwap {
     }
 
     /**
-     * @notice Calculates and prepares liquidity amounts for addition
-     * @param params AddLiquidityParams containing desired amounts and tokens
-     * @return result LiquidityResult with optimal amounts and liquidity to mint
-     * @dev Determines optimal amounts and calculates LP tokens to mint based on pool state
+     * @notice Calculates and prepares liquidity amounts for addition to a pool
+     * @param params AddLiquidityParams containing desired amounts and token addresses
+     * @return result LiquidityResult with optimal amounts and liquidity tokens to mint
+     * @dev For new pools: uses minimum of both amounts as liquidity tokens
+     * @dev For existing pools: calculates proportional liquidity based on current reserves
+     * @dev Ensures liquidity tokens minted is always greater than zero
      */
     function _calculateAndPrepareLiquidity(
         AddLiquidityParams memory params
