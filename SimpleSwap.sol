@@ -158,7 +158,7 @@ contract SimpleSwap {
         uint256 amountBMin,
         address to,
         uint256 deadline
-    ) external returns (uint256, uint256) {
+    ) external returns (uint256 amountA, uint256 amountB) {
         RemoveLiquidityParams memory params = RemoveLiquidityParams({
             tokenA: tokenA,
             tokenB: tokenB,
@@ -169,6 +169,12 @@ contract SimpleSwap {
             deadline: deadline
         });
 
+        return _removeLiquidity(params);
+    }
+
+    function _removeLiquidity(
+        RemoveLiquidityParams memory params
+    ) internal returns (uint256, uint256) {
         // Validate params
         _validateRemoveLiquidityParams(params);
 
@@ -178,10 +184,10 @@ contract SimpleSwap {
             address token1,
             address lpTokenAddress,
             Reserve memory reserve
-        ) = _getPoolInfo(tokenA, tokenB);
+        ) = _getPoolInfo(params.tokenA, params.tokenB);
 
         require(
-            reserve.totalLiquidity >= liquidity,
+            reserve.totalLiquidity >= params.liquidity,
             "SimpleSwap: There is not enough liquidity"
         );
 
@@ -198,7 +204,14 @@ contract SimpleSwap {
         // Update Reserves
         _updateReservesAfterRemoval(token0, token1, amountA, amountB, params);
 
-        emit LiquidityRemoved(tokenA, tokenB, to, amountA, amountB, liquidity);
+        emit LiquidityRemoved(
+            params.tokenA,
+            params.tokenB,
+            params.to,
+            amountA,
+            amountB,
+            params.liquidity
+        );
 
         return (amountA, amountB);
     }
