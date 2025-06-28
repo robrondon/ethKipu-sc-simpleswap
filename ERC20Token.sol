@@ -19,4 +19,12 @@ contract ERC20Token is ERC20 {
     ) ERC20(name, symbol) {
         _mint(msg.sender, initialSupply);
     }
+
+    /// @notice Mint new tokens to a specific address
+    /// @param to The address that will receive the minted tokens
+    /// @param amount The amount of tokens to mint (in wei)
+    /// @dev Anyone can call this function
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
 }
