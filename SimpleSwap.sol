@@ -188,13 +188,26 @@ contract SimpleSwap {
         _burnAndTransferTokens(params, amountA, amountB, lpTokenAddress);
 
         // Update Reserves
-        reserves[token0][token1].reserveA -= amount0;
-        reserves[token0][token1].reserveB -= amount1;
-        reserves[token0][token1].totalLiquidity -= liquidity;
+        _updateReservesAfterRemoval(token0, token1, amountA, amountB, params);
 
         emit LiquidityRemoved(tokenA, tokenB, to, amountA, amountB, liquidity);
 
         return (amountA, amountB);
+    }
+
+    function _updateReservesAfterRemoval(
+        address token0,
+        address token1,
+        uint256 amountA,
+        uint256 amountB,
+        RemoveLiquidityParams memory params
+    ) internal {
+        uint256 amount0 = params.tokenA == token0 ? amountA : amountB;
+        uint256 amount1 = params.tokenA == token0 ? amountB : amountA;
+
+        reserves[token0][token1].reserveA -= amount0;
+        reserves[token0][token1].reserveB -= amount1;
+        reserves[token0][token1].totalLiquidity -= params.liquidity;
     }
 
     function _burnAndTransferTokens(
