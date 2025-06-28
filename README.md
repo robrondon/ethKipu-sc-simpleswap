@@ -109,6 +109,14 @@ uint256[] memory amounts = simpleSwap.swapExactTokensForTokens(
 uint256 price = simpleSwap.getPrice(tokenA, tokenB);
 
 // Get expected output amount for a swap
+// Note: You need to get the reserves from the contract first
+(address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+(uint256 reserveA, uint256 reserveB, ) = simpleSwap.reserves(token0, token1);
+
+// Determine which reserves to use based on input token
+uint256 reserveIn = (inputToken == token0) ? reserveA : reserveB;
+uint256 reserveOut = (inputToken == token0) ? reserveB : reserveA;
+
 uint256 expectedOutput = simpleSwap.getAmountOut(
     100 * 10**18,    // amountIn
     reserveIn,       // current reserve of input token
