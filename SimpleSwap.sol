@@ -776,7 +776,8 @@ contract SimpleSwap {
             : result.amountA;
 
         if (reserve.totalLiquidity == 0) {
-            // Simple calculation instead of using uniswap sqrt
+            // Simpler calculation that ensures liquidity > 0 for new pools
+            // Use the smaller amount to avoid overflow issues
             result.liquidity = amount0 < amount1 ? amount0 : amount1;
 
             // Ensure minimum liquidity is provided
@@ -785,13 +786,22 @@ contract SimpleSwap {
                 "SimpleSwap: Liquidity cannot be zero"
             );
         } else {
+            // For existing pools, calculate proportional liquidity
             uint256 liquidity0 = (amount0 * reserve.totalLiquidity) /
                 reserve.reserveA;
             uint256 liquidity1 = (amount1 * reserve.totalLiquidity) /
                 reserve.reserveB;
+
+            // Take the minimum to maintain pool ratio
             result.liquidity = liquidity0 < liquidity1
                 ? liquidity0
                 : liquidity1;
+
+            // Ensure we're adding meaningful liquidity
+            require(
+                result.liquidity > 0,
+                "SimpleSwap: Calculated liquidity is zero"
+            );
         }
     }
 
