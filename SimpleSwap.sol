@@ -118,6 +118,12 @@ contract SimpleSwap {
             deadline: deadline
         });
 
+        return _addLiquidity(params);
+    }
+
+    function _addLiquidity(
+        AddLiquidityParams memory params
+    ) internal returns (uint256, uint256, uint256) {
         // Basic validations
         _validateAddLiquidityParams(params);
         // Calculate optimal amounts
@@ -127,19 +133,21 @@ contract SimpleSwap {
         _transferTokensForLiquidity(params, result);
 
         // Mint liquidity tokens to user
-        _mintLiquidityTokens(to, result);
+        _mintLiquidityTokens(params.to, result);
 
         // Update Reserves
         _updateReservesAfterAdd(result);
 
         emit LiquidityAdded(
-            tokenA,
-            tokenB,
-            to,
+            params.tokenA,
+            params.tokenB,
+            params.to,
             result.amountA,
             result.amountB,
             result.liquidity
         );
+
+        return (result.amountA, result.amountB, result.liquidity);
     }
 
     function removeLiquidity(
