@@ -17,7 +17,7 @@ contract ERC20Token is ERC20 {
         string memory symbol,
         uint256 initialSupply
     ) ERC20(name, symbol) {
-        _mint(msg.sender, initialSupply);
+        _mint(msg.sender, initialSupply * 10 ** decimals());
     }
 
     /// @notice Mint new tokens to a specific address
@@ -25,6 +25,6 @@ contract ERC20Token is ERC20 {
     /// @param amount The amount of tokens to mint (in wei)
     /// @dev Anyone can call this function
     function mint(address to, uint256 amount) external {
-        _mint(to, amount);
+        _mint(to, amount * 10 ** decimals());
     }
 }
