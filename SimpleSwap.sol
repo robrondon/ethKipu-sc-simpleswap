@@ -207,16 +207,22 @@ contract SimpleSwap {
         Reserve memory reserve,
         address token0
     ) internal pure returns (uint256 amountA, uint256 amountB) {
-        uint256 amount0 = (liquidity * reserve.reserveA) /
+        uint256 amount0 = (params.liquidity * reserve.reserveA) /
             reserve.totalLiquidity;
-        uint256 amount1 = (liquidity * reserve.reserveB) /
+        uint256 amount1 = (params.liquidity * reserve.reserveB) /
             reserve.totalLiquidity;
 
-        amountA = tokenA == token0 ? amount0 : amount1;
-        amountB = tokenA == token0 ? amount1 : amount0;
+        amountA = params.tokenA == token0 ? amount0 : amount1;
+        amountB = params.tokenA == token0 ? amount1 : amount0;
 
-        require(amountA >= amountAMin, "SimpleSwap: Insufficient amount A");
-        require(amountB >= amountBMin, "SimpleSwap: Insufficient amount B");
+        require(
+            amountA >= params.amountAMin,
+            "SimpleSwap: Insufficient amount A"
+        );
+        require(
+            amountB >= params.amountBMin,
+            "SimpleSwap: Insufficient amount B"
+        );
     }
 
     function _validateRemoveLiquidityParams(
