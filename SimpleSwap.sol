@@ -231,6 +231,12 @@ contract SimpleSwap {
             deadline: deadline
         });
 
+        return _swapExactTokensForTokens(params);
+    }
+
+    function _swapExactTokensForTokens(
+        SwapParams memory params
+    ) internal returns (uint256[] memory amounts) {
         // Validate Params
         _validateSwapParams(params);
 
@@ -238,21 +244,25 @@ contract SimpleSwap {
         (
             address token0,
             address token1,
-            address lpTokenAddress,
+            ,
             Reserve memory reserve
-        ) = _getPoolInfo(path[0], path[1]);
+        ) = _getPoolInfo(params.path[0], params.path[1]);
 
         // Get swap reserves
         (uint256 reserveIn, uint256 reserveOut) = _getSwapReserves(
-            path[0],
+            params.path[0],
             token0,
             reserve
         );
 
         // Calculate exchange from reservations
-        uint256 amountOut = _getAmountOut(amountIn, reserveIn, reserveOut);
+        uint256 amountOut = _getAmountOut(
+            params.amountIn,
+            reserveIn,
+            reserveOut
+        );
         require(
-            amountOut >= amountOutMin,
+            amountOut >= params.amountOutMin,
             "SimpleSwap: The available amountOut is not enough"
         );
 
@@ -264,10 +274,10 @@ contract SimpleSwap {
 
         // Prepare amounts array
         amounts = new uint256[](2);
-        amounts[0] = amountIn;
+        amounts[0] = params.amountIn;
         amounts[1] = amountOut;
 
-        emit SwappedTokens(path[0], path[1], to, amounts);
+        emit SwappedTokens(params.path[0], params.path[1], params.to, amounts);
     }
 
     function getPrice(
@@ -389,8 +399,8 @@ contract SimpleSwap {
         // Calculate how much tokenB is needed to match tokenA
         uint256 amountBOptimal = _calculateTokensEquivalent(
             amountADesired,
-            reserve.reserveA,
-            reserve.reserveB
+            reserveA,
+            reserveB
         );
 
         // If there is enough tokenB provided use all amountADesired
@@ -404,8 +414,8 @@ contract SimpleSwap {
             // If not, must calculate how much tokenA is needed to match tokenB
             uint256 amountAOptimal = _calculateTokensEquivalent(
                 amountBDesired,
-                reserve.reserveB,
-                reserve.reserveA
+                reserveB,
+                reserveA
             );
             require(
                 amountAOptimal <= amountADesired,
