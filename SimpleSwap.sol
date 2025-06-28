@@ -195,75 +195,6 @@ contract SimpleSwap {
         return (amountA, amountB);
     }
 
-    function _updateReservesAfterRemoval(
-        address token0,
-        address token1,
-        uint256 amountA,
-        uint256 amountB,
-        RemoveLiquidityParams memory params
-    ) internal {
-        uint256 amount0 = params.tokenA == token0 ? amountA : amountB;
-        uint256 amount1 = params.tokenA == token0 ? amountB : amountA;
-
-        reserves[token0][token1].reserveA -= amount0;
-        reserves[token0][token1].reserveB -= amount1;
-        reserves[token0][token1].totalLiquidity -= params.liquidity;
-    }
-
-    function _burnAndTransferTokens(
-        RemoveLiquidityParams memory params,
-        uint256 amountA,
-        uint256 amountB,
-        address lpTokenAddress
-    ) internal {
-        // Burn Tokens
-        LPToken(lpTokenAddress).burn(msg.sender, params.liquidity);
-
-        // Transfer tokens
-        IERC20(params.tokenA).transfer(params.to, amountA);
-        IERC20(params.tokenB).transfer(params.to, amountB);
-    }
-
-    function _calculateRemovalAmounts(
-        RemoveLiquidityParams memory params,
-        Reserve memory reserve,
-        address token0
-    ) internal pure returns (uint256 amountA, uint256 amountB) {
-        uint256 amount0 = (params.liquidity * reserve.reserveA) /
-            reserve.totalLiquidity;
-        uint256 amount1 = (params.liquidity * reserve.reserveB) /
-            reserve.totalLiquidity;
-
-        amountA = params.tokenA == token0 ? amount0 : amount1;
-        amountB = params.tokenA == token0 ? amount1 : amount0;
-
-        require(
-            amountA >= params.amountAMin,
-            "SimpleSwap: Insufficient amount A"
-        );
-        require(
-            amountB >= params.amountBMin,
-            "SimpleSwap: Insufficient amount B"
-        );
-    }
-
-    function _validateRemoveLiquidityParams(
-        RemoveLiquidityParams memory params
-    ) internal view {
-        require(
-            params.deadline >= block.timestamp,
-            "SimpleSwap: Expired deadline"
-        );
-        require(
-            params.to != address(0),
-            "SimpleSwap: Invalid recipient address"
-        );
-        require(
-            params.liquidity > 0,
-            "SimpleSwap: Liquidity must be greater than zero"
-        );
-    }
-
     function swapExactTokensForTokens(
         uint256 amountIn,
         uint256 amountOutMin,
@@ -659,6 +590,75 @@ contract SimpleSwap {
         require(
             params.amountIn > 0,
             "SimpleSwap: Amount in must be greater than zero"
+        );
+    }
+
+    function _updateReservesAfterRemoval(
+        address token0,
+        address token1,
+        uint256 amountA,
+        uint256 amountB,
+        RemoveLiquidityParams memory params
+    ) internal {
+        uint256 amount0 = params.tokenA == token0 ? amountA : amountB;
+        uint256 amount1 = params.tokenA == token0 ? amountB : amountA;
+
+        reserves[token0][token1].reserveA -= amount0;
+        reserves[token0][token1].reserveB -= amount1;
+        reserves[token0][token1].totalLiquidity -= params.liquidity;
+    }
+
+    function _burnAndTransferTokens(
+        RemoveLiquidityParams memory params,
+        uint256 amountA,
+        uint256 amountB,
+        address lpTokenAddress
+    ) internal {
+        // Burn Tokens
+        LPToken(lpTokenAddress).burn(msg.sender, params.liquidity);
+
+        // Transfer tokens
+        IERC20(params.tokenA).transfer(params.to, amountA);
+        IERC20(params.tokenB).transfer(params.to, amountB);
+    }
+
+    function _calculateRemovalAmounts(
+        RemoveLiquidityParams memory params,
+        Reserve memory reserve,
+        address token0
+    ) internal pure returns (uint256 amountA, uint256 amountB) {
+        uint256 amount0 = (params.liquidity * reserve.reserveA) /
+            reserve.totalLiquidity;
+        uint256 amount1 = (params.liquidity * reserve.reserveB) /
+            reserve.totalLiquidity;
+
+        amountA = params.tokenA == token0 ? amount0 : amount1;
+        amountB = params.tokenA == token0 ? amount1 : amount0;
+
+        require(
+            amountA >= params.amountAMin,
+            "SimpleSwap: Insufficient amount A"
+        );
+        require(
+            amountB >= params.amountBMin,
+            "SimpleSwap: Insufficient amount B"
+        );
+    }
+
+    function _validateRemoveLiquidityParams(
+        RemoveLiquidityParams memory params
+    ) internal view {
+        require(
+            params.deadline >= block.timestamp,
+            "SimpleSwap: Expired deadline"
+        );
+        require(
+            params.to != address(0),
+            "SimpleSwap: Invalid recipient address"
+        );
+        require(
+            params.liquidity > 0,
+            "SimpleSwap: Liquidity must be greater than zero"
         );
     }
 }
