@@ -433,12 +433,24 @@ contract SimpleSwap {
             "SimpleSwap: No liquidity for this pair"
         );
 
-        // Calculate and return price
+        // Calculate price as: how much tokenB per tokenA
+        // We need to return (amountB * 1e18) / amountA regardless of internal sorting
+
+        uint256 reserveA; // Reserve of tokenA
+        uint256 reserveB; // Reserve of tokenB
+
         if (tokenA == token0) {
-            price = (reserve.reserveB * 1e18) / reserve.reserveA;
+            // tokenA is token0, tokenB is token1
+            reserveA = reserve.reserveA;
+            reserveB = reserve.reserveB;
         } else {
-            price = (reserve.reserveA * 1e18) / reserve.reserveB;
+            // tokenA is token1, tokenB is token0
+            reserveA = reserve.reserveB;
+            reserveB = reserve.reserveA;
         }
+
+        // Price = (tokenB reserve * 1e18) / tokenA reserve
+        price = (reserveB * 1e18) / reserveA;
     }
 
     /**
