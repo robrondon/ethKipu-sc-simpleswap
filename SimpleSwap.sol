@@ -150,7 +150,7 @@ contract SimpleSwap {
         uint256 amountBMin,
         address to,
         uint256 deadline
-    ) external returns (uint256 amountA, uint256 amountB) {
+    ) external returns (uint256, uint256) {
         RemoveLiquidityParams memory params = RemoveLiquidityParams({
             tokenA: tokenA,
             tokenB: tokenB,
@@ -178,6 +178,11 @@ contract SimpleSwap {
         );
 
         // Calculate removal amounts
+        (uint256 amountA, uint256 amountB) = _calculateRemovalAmounts(
+            params,
+            reserve,
+            token0
+        );
 
         // Must burn liquidity tokens
         LPToken lpToken = LPToken(lpTokenAddress);
@@ -193,13 +198,15 @@ contract SimpleSwap {
         reserves[token0][token1].totalLiquidity -= liquidity;
 
         emit LiquidityRemoved(tokenA, tokenB, to, amountA, amountB, liquidity);
+
+        return (amountA, amountB);
     }
 
     function _calculateRemovalAmounts(
         RemoveLiquidityParams memory params,
         Reserve memory reserve,
         address token0
-    ) internal pure returns (uint256 amountA, uint256amountB) {
+    ) internal pure returns (uint256 amountA, uint256 amountB) {
         uint256 amount0 = (liquidity * reserve.reserveA) /
             reserve.totalLiquidity;
         uint256 amount1 = (liquidity * reserve.reserveB) /
@@ -603,8 +610,8 @@ contract SimpleSwap {
             Reserve memory reserve
         )
     {
-        (address token0, address token1) = _sortTokens(tokenA, tokenB);
-        address lpTokenAddress = lpTokens[token0][token1];
+        (token0, token1) = _sortTokens(tokenA, tokenB);
+        lpTokenAddress = lpTokens[token0][token1];
         require(
             lpTokenAddress != address(0),
             "SimpleSwap: Pool does not exist"
