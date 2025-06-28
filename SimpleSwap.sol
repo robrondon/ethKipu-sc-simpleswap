@@ -184,13 +184,8 @@ contract SimpleSwap {
             token0
         );
 
-        // Must burn liquidity tokens
-        LPToken lpToken = LPToken(lpTokenAddress);
-        lpToken.burn(msg.sender, liquidity);
-
-        // Transfer tokens
-        IERC20(tokenA).transfer(to, amountA);
-        IERC20(tokenB).transfer(to, amountB);
+        // Burn liquidity tokens and then transfer
+        _burnAndTransferTokens(params, amountA, amountB, lpTokenAddress);
 
         // Update Reserves
         reserves[token0][token1].reserveA -= amount0;
@@ -200,6 +195,20 @@ contract SimpleSwap {
         emit LiquidityRemoved(tokenA, tokenB, to, amountA, amountB, liquidity);
 
         return (amountA, amountB);
+    }
+
+    function _burnAndTransferTokens(
+        RemoveLiquidityParams memory params,
+        uint256 amountA,
+        uint256 amountB,
+        address lpTokenAddress
+    ) internal {
+        // Burn Tokens
+        LPToken(lpTokenAddress).burn(msg.sender, params.liquidity);
+
+        // Transfer tokens
+        IERC20(params.tokenA).transfer(params.to, amountA);
+        IERC20(params.tokenB).transfer(params.to, amountB);
     }
 
     function _calculateRemovalAmounts(
