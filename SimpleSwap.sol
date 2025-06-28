@@ -777,7 +777,13 @@ contract SimpleSwap {
 
         if (reserve.totalLiquidity == 0) {
             // Simple calculation instead of using uniswap sqrt
-            result.liquidity = (amount0 * amount1) / 1e18;
+            result.liquidity = amount0 < amount1 ? amount0 : amount1;
+
+            // Ensure minimum liquidity is provided
+            require(
+                result.liquidity > 0,
+                "SimpleSwap: Liquidity cannot be zero"
+            );
         } else {
             uint256 liquidity0 = (amount0 * reserve.totalLiquidity) /
                 reserve.reserveA;
